@@ -1,0 +1,17 @@
+[etcd_servers]
+10.17.9.17
+
+[k8s_servers:children]
+k8s_master
+k8s_node
+
+[k8s_master]
+10.17.9.17
+
+[k8s_node]
+10.17.9.17
+10.17.9.16
+
+[server_need_ssl:children]
+k8s_servers
+etcd_servers

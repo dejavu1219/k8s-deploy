@@ -1,0 +1,54 @@
+---
+- name: Check whether cfssl tool exists or not
+  stat: path={{bin_dir}}/cfssl
+  register: cfssl_exists
+
+- name: Get cfssl packge
+  get_url: url={{cfssl_pkg_link_prefix}}/{{item}} dest={{bin_dir}}/{{item}} mode=0755
+  with_items:
+    - cfssl
+    - cfssl-certinfo
+    - cfssljson
+  when: cfssl_exists.stat.exists == false
+
+- name: Create ssl config directory
+  file: path={{ssl_cfg_dir}} state=directory
+
+- name: Create ssl config files
+  template: src={{item}} dest={{ssl_cfg_dir}}/{{item}}
+  with_items:
+    - admin-csr.json
+    - ca-config.json
+    - ca-csr.json
+    - kube-proxy-csr.json
+    - kubernetes-csr.json
+
+- name: Install ssl prepare script
+  template: src=sslPrepare.sh dest={{ssl_cfg_dir}} mode=0755
+
+- name: Prepare ssl certs and keys
+  shell: chdir={{ssl_cfg_dir}} ./sslPrepare.sh
+
+- name: Check whether ssl prepared ok or not
+  shell: chdir={{ssl_cfg_dir}} ls -1 | grep -E "admin-key.pem|admin.pem|ca-key.pem|ca.pem|kube-proxy-key.pem|kube-proxy.pem|kubernetes-key.pem|kubernetes.pem" | wc -l
+  register: cfg_count
+  ignore_errors: True
+
+- name: Abort execution when prepared failed
+  fail: msg="{{cfg_count.stdount}}"
+  when: cfg_count.stdout != "8"
+
+- name: Create share folder to save ssl files
+  file: path={{share_ssl_dir}} state=directory
+
+- name: Upload cert and pem files to share folder
+  copy: src={{ssl_cfg_dir}}/{{item}} dest={{share_ssl_dir}}/{{item}} remote_src=yes
+  with_items:
+    - admin-key.pem
+    - admin.pem
+    - ca-key.pem
+    - ca.pem
+    - kube-proxy-key.pem
+    - kube-proxy.pem
+    - kubernetes-key.pem
+    - kubernetes.pem

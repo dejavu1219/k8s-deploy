@@ -1,0 +1,1 @@
+FLANNEL_OPTS=" --etcd-endpoints=https://{{groups['etcd_servers'][0]}}:{{etcd_port}} -etcd-cafile={{k8s_ssl_dir}}/ca.pem -etcd-certfile={{k8s_ssl_dir}}/kubernetes.pem -etcd-keyfile={{k8s_ssl_dir}}/kubernetes-key.pem --etcd-prefix="{{flanneld_etcd_path}}" --ip-masq=true --iface={{ansible_eth0.ipv4.address}}"

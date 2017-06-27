@@ -1,0 +1,26 @@
+#!/bin/bash
+
+envFile=/run/flannel/subnet.env
+
+if ! test -f $envFile;then
+    echo "No such file: $envFile"
+    exit 1
+fi
+
+source $envFile
+cat > /etc/default/docker <<EOF
+DOCKER_OPTS=" -H tcp://127.0.0.1:4243 -H unix:///var/run/docker.sock --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU}"
+EOF
+ip link set dev docker0 down
+ip link delete docker0
+iptables -X
+iptables -F
+iptables -Z
+iptables -t nat -F
+iptables -t nat -X
+iptables -t mangle -F
+iptables -t mangle -X
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+service docker restart

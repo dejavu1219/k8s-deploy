@@ -1,0 +1,35 @@
+---
+- include: common.yml app_list={{master_app}} target_hosts={{groups['k8s_master']}} tpl_dir=master
+
+- name: Config TLS bootstrap for kubelet
+  shell: chdir={{k8s_cfg_dir}} {{bin_dir}}/kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --user=kubelet-bootstrap -s http://{{ansible_eth0.ipv4.address}}:{{k8s_insecure_port}}
+  when: inventory_hostname in groups['k8s_master']
+  ignore_errors: True
+
+- include: common.yml app_list={{node_app}} target_hosts={{groups['k8s_node']}} tpl_dir=node
+
+- name: Check whether kubelet start correctly
+  shell: chdir={{bin_dir}} ./kubectl -s http://{{ansible_eth0.ipv4.address}}:{{k8s_insecure_port}} get csr | grep "kubelet-bootstrap"
+  register: kubelet_up
+  ignore_errors: True
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Abort deployment when kubelet not start correctly
+  fail: msg="Please check kubelet"
+  when: inventory_hostname in groups['k8s_master'] and kubelet_up.rc != 0
+
+- name: Install service prepare script
+  template: src=servicePrepare.sh dest=/tmp/servicePrepare.sh mode=0755
+
+- name: Prepare for service deployment
+  shell: chdir=/tmp ./servicePrepare.sh
+
+- include: service.yml service_name={{item.name}} service_cfg_dir={{item.cfg_dir}} service_cfg_file_list={{item.cfg_file_list}}
+  with_items:
+    - { name: 'dashboard', cfg_dir: "{{dashboard.cfg_dir}}", cfg_file_list: "{{dashboard.cfg_file_list}}" }
+    - { name: 'dns', cfg_dir: "{{dns.cfg_dir}}", cfg_file_list: "{{dns.cfg_file_list}}" }
+    - { name: 'efk', cfg_dir: "{{efk.cfg_dir}}", cfg_file_list: "{{efk.cfg_file_list}}" }
+    - { name: 'heapster', cfg_dir: "{{heapster.cfg_dir}}", cfg_file_list: "{{heapster.cfg_file_list}}" }
+  when: inventory_hostname in groups['k8s_master']
+  tags:
+    - service_config

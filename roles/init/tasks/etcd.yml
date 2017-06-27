@@ -1,0 +1,64 @@
+---
+- name: Check whether etcd installed or not
+  stat: path={{bin_dir}}/etcd
+  register: etcd_exists
+
+- name: Create data dir
+  file: path={{etcd_data_dir}} state=directory
+  when: etcd_exists.stat.exists == false
+
+- name: Check whether etcd package exists or not
+  stat: path={{deploy_base}}/{{etcd_pkg_tgz}}
+  register: etcd_pkg_exists
+
+- name: Get sha256sum of package if exists
+  stat: path={{deploy_base}}/{{etcd_pkg_tgz}} checksum_algorithm=sha256
+  register: etcd_sha256sum
+  when: etcd_pkg_exists.stat.exists == true and etcd_exists.stat.exists == true
+
+- name: Get etcd package
+  get_url: url={{etcd_pkg_link}} dest={{deploy_base}}
+  when: etcd_exists.stat.exists == false or (etcd_exists.stat.exists == true and etcd_pkg_exists.stat.exists == true and etcd_sha256sum.stat.checksum != etcd_pkg_sha256sum)
+
+- name: Create unarhive dest folder
+  file: path={{deploy_base}}/{{etcd_pkg_dir}} state=directory
+
+- name: Unarchive package
+  unarchive: src={{deploy_base}}/{{etcd_pkg_tgz}} dest={{deploy_base}} remote_src=yes
+
+- name: Install binary files
+  copy: src={{deploy_base}}/{{etcd_pkg_dir}}/{{item}} dest={{bin_dir}}/{{item}} remote_src=yes mode=0755
+  with_items:
+    - etcd
+    - etcdctl
+
+- name: Set default config file
+  template: src=etcd/default.j2 dest={{default_cfg_dir}}/etcd mode=0644
+
+- name: Set upstart init config file
+  template: src=etcd/init.j2 dest={{init_cfg_dir}}/etcd.conf mode=0644
+
+- name: Install init.d file
+  template: src=etcd/init.d.j2 dest={{initd_dir}}/etcd mode=0755
+
+- name: Add etcd to system servie list
+  shell: update-rc.d etcd defaults
+
+- name: Check whether etcd start or not
+  shell: ps -C etcd --no-headings | wc -l
+  register: etcd_running
+  ignore_errors: True
+
+- name: Start etcd if not running
+  service: name=etcd state=started
+  when: etcd_running.stdout == "0"
+
+- name: Restart etcd if already running
+  service: name=etcd state=restarted
+  when: etcd_running.stdout != "0"
+
+- name: Install flanneld init script
+  template: src=etcd/configFlanneld.j2 dest=/tmp/configFlanneld.sh mode=0755
+
+- name: Init flanneld net
+  shell: chdir=/tmp ./configFlanneld.sh

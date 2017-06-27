@@ -1,0 +1,17 @@
+{
+    "CN": "kubernetes",
+    "hosts": ["127.0.0.1", "{{cluster_first_ip}}", "{{groups['server_need_ssl'] | join('\", \"')}}", "kubernetes", "kubernetes.default", "kubernetes.default.svc", "kubernetes.default.svc.cluster", "kubernetes.default.svc.cluster.local"],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "CN",
+            "ST": "Shanghai",
+            "L": "Shanghai",
+            "O": "k8s",
+            "OU": "System"
+        }
+    ]
+}

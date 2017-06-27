@@ -1,0 +1,30 @@
+---
+- name: Install binary app
+  copy: src={{share_bin_dir}}/{{item}} dest={{bin_dir}}/{{item}} mode=0755 remote_src=yes
+  with_items: "{{app_list}}"
+  when: inventory_hostname in target_hosts
+
+- name: Set default config for app
+  template: src={{tpl_dir}}/{{item}}.default.j2 dest={{default_cfg_dir}}/{{item}}
+  with_items: "{{app_list}}"
+  when: inventory_hostname in target_hosts
+
+- name: Set upstart init config for app
+  template: src={{tpl_dir}}/{{item}}.init.j2 dest={{init_cfg_dir}}/{{item}}.conf
+  with_items: "{{app_list}}"
+  when: inventory_hostname in target_hosts
+
+- name: Set init.d script for app
+  template: src={{tpl_dir}}/{{item}}.init.d.j2 dest={{initd_dir}}/{{item}} mode=0755
+  with_items: "{{app_list}}"
+  when: inventory_hostname in target_hosts
+
+- name: Add app to system service
+  shell: update-rc.d {{item}} defaults
+  with_items: "{{app_list}}"
+  when: inventory_hostname in target_hosts
+
+- name: Restart app
+  service: name={{item}} state=restarted
+  with_items: "{{app_list}}"
+  when: inventory_hostname in target_hosts

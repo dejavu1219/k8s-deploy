@@ -1,0 +1,79 @@
+---
+- name: Create path for mounting share folder
+  file: path={{storage.pub_folder}} state=directory
+
+- name: Mount share folder
+  mount: name={{storage.pub_folder}} src={{storage.pub_src}} fstype=cifs opts=username={{storage.pub_user}},password={{storage.pub_pass}} state=mounted
+
+- name: Create folder for saving k8s binarie package
+  file: path={{deploy_base}}/{{k8s_server_bin_dir}} state=directory
+
+- name: Check whether k8s binary package exists or not
+  stat: path={{deploy_base}}/{{k8s_server_bin_tar}}
+  register: k8s_tgz_exists
+
+- name: Get k8s binary package checksum string
+  stat: path={{deploy_base}}/{{k8s_server_bin_tar}} checksum_algorithm=sha256
+  register: k8s_tgz_sha256sum
+  when: k8s_tgz_exists.stat.exists == true
+
+- name: Get kubernetes package
+  get_url: url={{k8s_pkg_link}} dest={{deploy_base}}
+  when: inventory_hostname in groups['k8s_master'] and k8s_tgz_exists.stat.exists == false or (k8s_tgz_exists.stat.exists == true and k8s_tgz_sha256sum.stat.checksum != k8s_server_bin_sha256sum)
+
+- name: Create folder to save package
+  file: path={{deploy_base}}/{{k8s_server_bin_dir}} state=directory
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Unarchive package
+  unarchive: src={{deploy_base}}/{{k8s_server_bin_tar}} dest={{deploy_base}}/{{k8s_server_bin_dir}} remote_src=yes
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Install kubectl
+  copy: src={{deploy_base}}/{{k8s_server_bin_dir}}/kubernetes/server/bin/kubectl dest={{bin_dir}}/kubectl mode=0755 remote_src=yes
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Create folder for saving k8s binary files
+  file: path={{share_bin_dir}} state=directory
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Copy binaries to share folder
+  copy: src={{deploy_base}}/{{k8s_server_bin_dir}}/kubernetes/server/bin/{{item}} dest={{share_bin_dir}}/{{item}} remote_src=yes
+  with_items:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
+    - kube-proxy
+    - kubelet
+    - kubectl
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Create k8s ssl directory
+  file: path={{k8s_ssl_dir}} state=directory
+
+- include: cert.yml
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Install ssl cert and key files
+  copy: src={{share_ssl_dir}}/{{item}} dest={{k8s_ssl_dir}}/{{item}} remote_src=yes
+  with_items:
+    - admin-key.pem
+    - admin.pem
+    - ca-key.pem
+    - ca.pem
+    - kube-proxy-key.pem
+    - kube-proxy.pem
+    - kubernetes-key.pem
+    - kubernetes.pem
+
+- include: kubeconfig.yml
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Install kubeconfig files
+  copy: src={{share_kubeconfig_dir}}/{{item}} dest={{k8s_cfg_dir}}/{{item}} remote_src=yes
+  with_items:
+    - bootstrap.kubeconfig
+    - kube-proxy.kubeconfig
+
+- include: etcd.yml
+  when: inventory_hostname in groups['k8s_master']

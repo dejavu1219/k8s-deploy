@@ -1,0 +1,29 @@
+---
+- name: Check whether docker installed or not
+  shell: dpkg -l |grep -Eq "^ii\s+\<docker-ce\>"
+  register: docker_exists
+  ignore_errors: True
+
+- name: Install dependencies
+  apt: name={{item}} state=present update_cache=yes
+  with_items:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - software-properties-common
+  when: docker_exists.rc != 0
+
+- name: Add Docker's official GPG key
+  shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+  when: docker_exists.rc != 0
+
+- name: Set up docker repository
+  apt_repository: repo="deb [arch=amd64] https://download.docker.com/linux/ubuntu trusty stable" state=present
+  when: docker_exists.rc != 0
+
+- name: Install docker-ce and bridge-utils
+  apt: name={{item}} state=present update_cache=yes
+  with_items:
+    - docker-ce
+    - bridge-utils
+  when: docker_exists.rc != 0

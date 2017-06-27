@@ -1,0 +1,88 @@
+---
+default_cfg_dir: /etc/default
+init_cfg_dir: /etc/init
+initd_dir: /etc/init.d
+
+docker:
+  registry: <YOUR_PRIVATE_REGISTRY>
+  user: <DOCKER_REGISTRY_USERNAME>
+  password: <DOCKER_REGISTRY_PASSWORD>
+  email: <DOCKER_REGISRY_EMAIL>
+
+arch: amd64
+plt: linux
+
+storage:
+  pub_folder: /store/pkgs
+  pub_pass: <SHARE_SERVER_PASSWORD>
+  pub_src: <SHARE_SERVER_PATH>
+  pub_user: <SHARE_SERVER_USER>
+download_server: <DOWNLOAD_SERVER>
+base_pod: "{{docker.registry}}/gcr.io/google_containers/pause-amd64:3.0"
+
+share_k8s_dir: "{{storage.pub_folder}}/k8s"
+share_bin_dir: "{{share_k8s_dir}}/binaries"
+share_ssl_dir: "{{share_k8s_dir}}/ssl"
+share_kubeconfig_dir: "{{share_k8s_dir}}/kubeconfig"
+
+cfssl_pkg_link_prefix: "{{download_server}}/cfssl"
+k8s_ver: 1.6.0
+k8s_insecure_port: 8080
+k8s_server_bin_dir: "kubernetes-server-{{plt}}-{{arch}}"
+k8s_server_bin_tar: "{{k8s_server_bin_dir}}.tar.gz"
+k8s_pkg_link: "{{download_server}}/kubernetes/{{k8s_ver}}/{{k8s_server_bin_tar}}"
+
+etcd_ver: v3.1.5
+etcd_data_dir: /var/lib/etcd
+etcd_pkg_dir: "etcd-{{etcd_ver}}-{{plt}}-{{arch}}"
+etcd_pkg_tgz: "{{etcd_pkg_dir}}.tar.gz"
+etcd_pkg_link: "{{download_server}}/etcd/{{etcd_pkg_tgz}}"
+etcd_port: "2379"
+etcd_pkg_sha256sum: 812f2a8e28330cb1e127177ff81efaa24f8e57ce22d3cd28799ef1f939f71454
+flanneld_etcd_path: /k8s-net/network
+flanneld_net: 10.29.0.0/16
+
+flanneld_ver: v0.7.1
+flanneld_pkg_dir: "flannel-{{flanneld_ver}}-{{plt}}-{{arch}}"
+flanneld_pkg_tgz: "{{flanneld_pkg_dir}}.tar.gz"
+flanneld_pkg_link: "{{download_server}}/flannel/{{flanneld_pkg_tgz}}"
+flanneld_pkg_sha256sum: 5e9d21e1a431421eff1b607cd32d22bff0a08490594d709024da52860a7e0b19
+
+cluster_ip_range: 10.254.0.0/24
+cluster_first_ip: 10.254.0.1
+cluster_name: kubernetes
+cluster_domain: cluster.local.
+auth_mode: RBAC
+dns_server_ip: 10.254.0.2
+service_node_port_range: 30000-32767
+bin_dir: /usr/local/bin
+deploy_base: /mnt/deploy
+ssl_cfg_dir: "{{deploy_base}}/ssl"
+k8s_cfg_dir: /etc/kubernetes
+k8s_ssl_dir: "{{k8s_cfg_dir}}/ssl"
+k8s_ca_file: "{{k8s_ssl_dir}}/ca.pem"
+k8s_cert_file: "{{k8s_ssl_dir}}/kubernetes.pem"
+k8s_key_file: "{{k8s_ssl_dir}}/kubernetes-key.pem"
+k8s_yaml_file_dir: "{{deploy_base}}/k8s"
+bootstrap_token: 994ba511757bf9f147e818e261f080b1
+kube_apiserver: "https://{{groups['k8s_master'][0]}}:6443"
+k8s_server_bin_sha256sum: 3625b63d573aa4d28eaa30b291017f775f2ddc0523f40d25023ad1da9c30390e
+
+master_app: ['kube-apiserver', 'kube-controller-manager', 'kube-scheduler']
+node_app: ['kubelet', 'kube-proxy']
+
+dashboard:
+  cfg_dir: "{{k8s_yaml_file_dir}}/dashboard"
+  cfg_file_list: ['dashboard-controller.yaml', 'dashboard-rbac.yaml', 'dashboard-service.yaml']
+
+dns:
+  cfg_dir: "{{k8s_yaml_file_dir}}/dns"
+  cfg_file_list: ['kubedns-cm.yaml', 'kubedns-controller.yaml', 'kubedns-sa.yaml', 'kubedns-svc.yaml']
+
+efk:
+  cfg_dir: "{{k8s_yaml_file_dir}}/efk"
+  cfg_file_list: ['efk-rbac.yaml', 'es-controller.yaml', 'es-service.yaml', 'fluentd-es-ds.yaml', 'kibana-controller.yaml', 'kibana-service.yaml']
+
+heapster:
+  cfg_dir: "{{k8s_yaml_file_dir}}/heapster"
+  cfg_file_list: ['grafana-deployment.yaml', 'grafana-service.yaml', 'heapster-deployment.yaml', 'heapster-rbac.yaml', 'heapster-service.yaml', 'influxdb-cm.yaml', 'influxdb-deployment.yaml', 'influxdb-service.yaml']

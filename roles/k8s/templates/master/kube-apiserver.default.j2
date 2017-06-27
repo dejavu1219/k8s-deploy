@@ -1,0 +1,29 @@
+KUBE_APISERVER_OPTS=" --logtostderr=true \
+ --v=0 \
+ --allow-privileged=true \
+ --advertise-address={{ansible_eth0.ipv4.address}} \
+ --bind-address={{ansible_eth0.ipv4.address}} \
+ --insecure-bind-address={{ansible_eth0.ipv4.address}} \
+ --etcd-servers=https://{{groups['etcd_servers'] | join(":" + etcd_port + ",")}}:{{etcd_port}} \
+ --service-cluster-ip-range={{cluster_ip_range}} \
+ --admission-control=ServiceAccount,NamespaceLifecycle,NamespaceExists,LimitRanger,ResourceQuota \
+ --authorization-mode={{auth_mode}} \
+ --runtime-config=rbac.authorization.k8s.io/v1beta1
+ --kubelet-https=true \
+ --experimental-bootstrap-token-auth \
+ --token-auth-file={{k8s_cfg_dir}}/token.csv \
+ --service-node-port-range={{service_node_port_range}} \
+ --tls-cert-file={{k8s_ssl_dir}}/kubernetes.pem \
+ --tls-private-key-file={{k8s_ssl_dir}}/kubernetes-key.pem \
+ --client-ca-file={{k8s_ssl_dir}}/ca.pem \
+ --service-account-key-file={{k8s_ssl_dir}}/ca-key.pem \
+ --etcd-cafile={{k8s_ssl_dir}}/ca.pem \
+ --etcd-certfile={{k8s_ssl_dir}}/kubernetes.pem \
+ --etcd-keyfile={{k8s_ssl_dir}}/kubernetes-key.pem \
+ --enable-swagger-ui=true \
+ --apiserver-count=3 \
+ --audit-log-maxage=30 \
+ --audit-log-maxbackup=3 \
+ --audit-log-maxsize=100 \
+ --audit-log-path=/var/lib/audit.log \
+ --event-ttl=1h"

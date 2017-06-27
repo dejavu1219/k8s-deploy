@@ -1,0 +1,10 @@
+ETCD_OPTS="  --name infra \
+  --cert-file={{k8s_ssl_dir}}/kubernetes.pem \
+  --key-file={{k8s_ssl_dir}}/kubernetes-key.pem \
+  --peer-cert-file={{k8s_ssl_dir}}/kubernetes.pem \
+  --peer-key-file={{k8s_ssl_dir}}/kubernetes-key.pem \
+  --trusted-ca-file={{k8s_ssl_dir}}/ca.pem \
+  --peer-trusted-ca-file={{k8s_ssl_dir}}/ca.pem \
+  --listen-client-urls https://{{ansible_eth0.ipv4.address}}:{{etcd_port}},https://127.0.0.1:{{etcd_port}} \
+  --advertise-client-urls https://{{ansible_eth0.ipv4.address}}:{{etcd_port}} \
+  --data-dir={{etcd_data_dir}}"

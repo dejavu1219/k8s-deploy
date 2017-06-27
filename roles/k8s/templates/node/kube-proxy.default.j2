@@ -1,0 +1,7 @@
+ KUBE_PROXY_OPTS=" --logtostderr=true \
+   --v=0 \
+   --master=http://{{groups['k8s_master'][0]}}:{{k8s_insecure_port}} \
+   --bind-address={{ansible_eth0.ipv4.address}} \
+   --hostname-override={{ansible_eth0.ipv4.address}} \
+   --kubeconfig={{k8s_cfg_dir}}/kube-proxy.kubeconfig \
+   --cluster-cidr={{cluster_ip_range}}"

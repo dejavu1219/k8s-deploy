@@ -1,0 +1,5 @@
+KUBE_SCHEDULER_OPTS=" --logtostderr=true \
+ --v=0 \
+ --master=http://{{groups['k8s_master'][0]}}:{{k8s_insecure_port}} \
+ --leader-elect=true \
+ --address=127.0.0.1"

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if ! test -f {{bin_dir}}/etcdctl;then
+    echo "No such file: {{bin_dir}}/etcdctl"
+fi
+cmd={{bin_dir}}/etcdctl
+$cmd --ca-file={{k8s_ssl_dir}}/ca.pem --cert-file={{k8s_ssl_dir}}/kubernetes.pem --key-file={{k8s_ssl_dir}}/kubernetes-key.pem -C https://{{groups['etcd_servers'][0]}}:{{etcd_port}} mkdir {{flanneld_etcd_path}}
+$cmd --ca-file={{k8s_ssl_dir}}/ca.pem \
+--cert-file={{k8s_ssl_dir}}/kubernetes.pem \
+--key-file={{k8s_ssl_dir}}/kubernetes-key.pem \
+-C https://{{groups['etcd_servers'][0]}}:{{etcd_port}} \
+set {{flanneld_etcd_path}}/config \
+'{{ "{" }}"Backend": {{ "{" }}"Type": "vxlan"{{ "}" }},"Network": "{{flanneld_net}}" {{ "}" }}'

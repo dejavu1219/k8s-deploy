@@ -1,0 +1,12 @@
+KUBELET_OPTS=" --logtostderr=true \
+ --v=0 \
+ --address={{ansible_eth0.ipv4.address}} \
+ --hostname-override={{ansible_eth0.ipv4.address}} \
+ --pod-infra-container-image={{base_pod}} \
+ --cluster-dns={{dns_server_ip}} \
+ --experimental-bootstrap-kubeconfig={{k8s_cfg_dir}}/bootstrap.kubeconfig \
+ --kubeconfig={{k8s_cfg_dir}}/kubelet.kubeconfig \
+ --require-kubeconfig --cert-dir={{k8s_ssl_dir}} \
+ --cluster-domain={{cluster_domain}} \
+ --hairpin-mode promiscuous-bridge \
+ --serialize-image-pulls=false"

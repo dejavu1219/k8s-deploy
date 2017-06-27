@@ -1,0 +1,6 @@
+---
+- hosts: all
+  roles:
+    - init
+    - flanneld
+    - k8s

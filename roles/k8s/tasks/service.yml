@@ -1,0 +1,30 @@
+---
+- name: Create config folder
+  file: path={{service_cfg_dir}} state=directory
+
+- name: Get config files
+  template: src={{service_name}}/{{file_item}} dest={{service_cfg_dir}}/{{file_item}}
+  with_items: "{{service_cfg_file_list}}"
+  loop_control:
+    loop_var: file_item
+
+- name: Check if prepare script needed or not
+  local_action: shell test -f roles/k8s/templates/{{service_name}}/prepare.sh
+  register: prepare_exists
+  ignore_errors: True
+
+- name: Install prepare script
+  template: src={{service_name}}/prepare.sh dest={{service_cfg_dir}}/prepare.sh mode=0755
+  when: prepare_exists.rc == 0
+
+- name: Prepare for service
+  shell: chdir={{service_cfg_dir}} ./prepare.sh
+  when: prepare_exists.rc == 0
+
+- name: Remove prepare script
+  shell: chdir={{service_cfg_dir}} mv prepare.sh /tmp/{{service_name}}.prepare.sh
+  when: prepare_exists.rc == 0
+
+- name: Create service
+  shell: chdir={{service_cfg_dir}} {{bin_dir}}/kubectl -s http://{{ansible_eth0.ipv4.address}}:{{k8s_insecure_port}} create -f .
+  ignore_errors: True
